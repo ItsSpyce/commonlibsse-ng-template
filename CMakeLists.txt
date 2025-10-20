@@ -63,7 +63,7 @@ if(DEFINED OUTPUT_FOLDER)
     set(DLL_FOLDER "${OUTPUT_FOLDER}/SKSE/Plugins")
 
     message(STATUS "SKSE plugin output folder: ${DLL_FOLDER}")
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/Material Swapper Framework")
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${PROJECT_NAME}")
     file(MAKE_DIRECTORY "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}")
 
     # TODO: make this actually work with the res folder
@@ -73,11 +73,32 @@ if(DEFINED OUTPUT_FOLDER)
         POST_BUILD
         # Ensure SKSE/Plugins directory exists in archive output
         COMMAND "${CMAKE_COMMAND}" -E make_directory "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/SKSE/Plugins"
-        # Copy res folder into SKSE/Plugins/<ProjectName> in archive output
-        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/res" "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/SKSE/Plugins/${PROJECT_NAME}" || (exit 0)
-        # Copy interface folder into archive output
-        COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/interface" "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/interface" || (exit 0)
-        # Copy DLL and PDB into SKSE/Plugins in archive output
+        VERBATIM
+    )
+
+    if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/res")
+        add_custom_command(
+            TARGET "${PROJECT_NAME}"
+            POST_BUILD
+            # Ensure res folder is copied into OUTPUT_FOLDER
+            COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/res" "${OUTPUT_FOLDER}/${PROJECT_NAME}"
+            VERBATIM
+        )
+    endif()
+
+    if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/interface")
+        add_custom_command(
+            TARGET "${PROJECT_NAME}"
+            POST_BUILD
+            # Ensure interface folder is copied into OUTPUT_FOLDER
+            COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/interface" "${OUTPUT_FOLDER}/interface"
+            VERBATIM
+        )
+    endif()
+
+    add_custom_command(
+        TARGET "${PROJECT_NAME}"
+        POST_BUILD
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different "$<TARGET_FILE:${PROJECT_NAME}>" "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/SKSE/Plugins/$<TARGET_FILE_NAME:${PROJECT_NAME}>"
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different "$<TARGET_PDB_FILE:${PROJECT_NAME}>" "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/SKSE/Plugins/$<TARGET_PDB_FILE_NAME:${PROJECT_NAME}>"
         # Copy the entire archive output directory into OUTPUT_FOLDER
@@ -86,4 +107,5 @@ if(DEFINED OUTPUT_FOLDER)
         COMMAND "${CMAKE_COMMAND}" -E tar "cf" "${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${PROJECT_VERSION}.zip" --format=zip "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}"
         VERBATIM
     )
+
 endif()
